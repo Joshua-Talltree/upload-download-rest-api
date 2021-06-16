@@ -1,6 +1,7 @@
 package com.restapi.uploaddownloadapi.services;
 
 import com.restapi.uploaddownloadapi.config.StorageProperties;
+import com.restapi.uploaddownloadapi.exceptions.StorageException;
 import com.restapi.uploaddownloadapi.repositories.StorageService;
 import org.apache.tomcat.util.buf.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.stream.Stream;
 
@@ -27,7 +29,7 @@ public class FileSystemStorageService implements StorageService {
 
     @Autowired
     public FileSystemStorageService(StorageProperties properties) {
-        this.rootLocation = Path.get(properties.getLocation());
+        this.rootLocation = Paths.get(properties.getLocation());
     }
 
     @Override
@@ -54,7 +56,7 @@ public class FileSystemStorageService implements StorageService {
             }
             if (filename.contains("..")) {
                 // This is a security check
-                throw new StorageExceeption(
+                throw new StorageException(
                         "Cannot store file with relative path outside current directory "
                                 + filename);
             }
@@ -89,7 +91,7 @@ public class FileSystemStorageService implements StorageService {
     public Resource loadAsResource(String filename) {
         try {
             Path file = load(filename);
-            Resource resource = new UrlResource(file.toUri());
+            Resource resource = (Resource) new UrlResource(file.toUri());
             if (resource.exists() || resource.isReadable()) {
                 return resource;
             }
@@ -97,7 +99,7 @@ public class FileSystemStorageService implements StorageService {
                 throw new FileNotFoundException("Could not read file: " + filename);
             }
         }
-        catch (MalformedURLException e) {
+        catch (MalformedURLException | FileNotFoundException e) {
             throw new FileNotFoundException("Could not read file: " + filename, e);
         }
     }
