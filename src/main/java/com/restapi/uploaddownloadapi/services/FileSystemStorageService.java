@@ -1,18 +1,17 @@
 package com.restapi.uploaddownloadapi.services;
 
 import com.restapi.uploaddownloadapi.config.StorageProperties;
+import com.restapi.uploaddownloadapi.exceptions.FileNotFoundException;
 import com.restapi.uploaddownloadapi.exceptions.StorageException;
 import com.restapi.uploaddownloadapi.repositories.StorageService;
-import org.apache.tomcat.util.buf.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -20,12 +19,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Objects;
 import java.util.stream.Stream;
+
+import static org.springframework.util.StringUtils.cleanPath;
 
 @Service
 public class FileSystemStorageService implements StorageService {
 
-    private final Path rootLocation;
+    private Path rootLocation;
 
     @Autowired
     public FileSystemStorageService(StorageProperties properties) {
@@ -42,14 +44,10 @@ public class FileSystemStorageService implements StorageService {
         }
     }
 
-    @Override
-    public void inti() {
-
-    }
 
     @Override
     public String store(MultipartFile file) {
-        String filename = StringUtils.cleanPath(file.getOriginalFilename());
+        String filename = cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
         try {
             if (file.isEmpty()) {
                 throw new StorageException("Failed to store empty file" + filename);
@@ -91,7 +89,7 @@ public class FileSystemStorageService implements StorageService {
     public Resource loadAsResource(String filename) {
         try {
             Path file = load(filename);
-            Resource resource = (Resource) new UrlResource(file.toUri());
+            Resource resource = new UrlResource(file.toUri());
             if (resource.exists() || resource.isReadable()) {
                 return resource;
             }
@@ -99,7 +97,7 @@ public class FileSystemStorageService implements StorageService {
                 throw new FileNotFoundException("Could not read file: " + filename);
             }
         }
-        catch (MalformedURLException | FileNotFoundException e) {
+        catch (MalformedURLException e) {
             throw new FileNotFoundException("Could not read file: " + filename, e);
         }
     }

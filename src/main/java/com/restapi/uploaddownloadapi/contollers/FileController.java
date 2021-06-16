@@ -2,6 +2,7 @@ package com.restapi.uploaddownloadapi.contollers;
 
 import com.restapi.uploaddownloadapi.json.FileResponse;
 import com.restapi.uploaddownloadapi.repositories.StorageService;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -10,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import javax.annotation.Resource;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,13 +18,13 @@ import java.util.stream.Collectors;
 @Controller
 public class FileController {
 
-    private StorageService storageService;
+    private final StorageService storageService;
 
     public FileController(StorageService storageService) {
         this.storageService = storageService;
     }
 
-    @GetMapping
+    @GetMapping("/")
     public String listAllFiles(Model model) {
 
 
@@ -38,7 +38,7 @@ public class FileController {
         return "listFiles";
     }
 
-    @GetMapping
+    @GetMapping("/download/{filename:.+}")
     @ResponseBody
     public ResponseEntity<Resource> downloadFile(@PathVariable String filename) {
 
@@ -46,7 +46,7 @@ public class FileController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + resource.getFileName() + "\"")
+                        "attachment; filename=\"" + resource.getFilename() + "\"")
                 .body(resource);
     }
 
